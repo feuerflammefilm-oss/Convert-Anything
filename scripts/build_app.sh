@@ -33,7 +33,14 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/ConvertAnything"
 cp "$BUILD_DIR/ffmpeg/ffmpeg" "$BUILD_DIR/ffmpeg/ffprobe" "$APP/Contents/Resources/"
 sed "s/__VERSION__/$VERSION/g" Resources/Info.plist > "$APP/Contents/Info.plist"
-if [ -f Resources/AppIcon.icns ]; then cp Resources/AppIcon.icns "$APP/Contents/Resources/"; fi
+echo "==> App-Icon erzeugen"
+ICONSET="$BUILD_DIR/AppIcon.iconset"
+mkdir -p "$ICONSET"
+for s in 16 32 128 256 512; do
+  sips -z $s $s Resources/AppIcon.png --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
+  sips -z $((s*2)) $((s*2)) Resources/AppIcon.png --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
+done
+iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 
 echo "==> Ad-hoc signieren (nötig, damit es auf Apple Silicon startet)"
 codesign --force --sign - "$APP/Contents/Resources/ffmpeg"
