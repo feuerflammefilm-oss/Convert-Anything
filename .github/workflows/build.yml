@@ -1,0 +1,35 @@
+name: App bauen
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: App bauen
+        run: |
+          chmod +x scripts/build_app.sh
+          VERSION="0.1.${{ github.run_number }}" scripts/build_app.sh
+
+      - name: Als Download speichern
+        uses: actions/upload-artifact@v4
+        with:
+          name: Convert-Anything
+          path: build/Convert-Anything.zip
+
+      - name: Release "Neueste Version" aktualisieren
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest build/Convert-Anything.zip \
+            --title "Convert Anything – neueste Version (Build ${{ github.run_number }})" \
+            --notes "Automatisch gebaut aus dem aktuellen Stand. ZIP laden, entpacken, App in den Programme-Ordner ziehen."
