@@ -54,14 +54,31 @@ final class FFmpegRunner {
         process?.terminate()
     }
 
-    func run(input: URL, output: URL, preset: Preset, duration: Double?,
+    func run(inputs: [URL], output: URL, preset: Preset, duration: Double?,
              onProgress: @escaping (Double) -> Void) async throws {
         guard let ffmpeg = Tools.path("ffmpeg") else { throw FFmpegError.notFound }
 
+        // Mehrere Dateien: über eine Liste nahtlos hintereinanderhängen (concat)
+        var inputArgs: [String]
+        var listFile: URL?
+        if inputs.count > 1 {
+            let list = FileManager.default.temporaryDirectory.appendingPathComponent("concat-\(UUID().uuidString).txt")
+            let lines = inputs.map { "file '" + $0.path.replacingOccurrences(of: "'", with: "'\\''") + "'" }
+            try lines.joined(separator: "\n").write(to: list, atomically: true, encoding: .utf8)
+            inputArgs = ["-f", "concat", "-safe", "0", "-i", list.path]
+            listFile = list
+        } else {
+            inputArgs = ["-i", inputs[0].path]
+        }
+        defer { if let listFile { try? FileManager.default.removeItem(at: listFile) } }
+
+        // WAV über 4 GB braucht das RF64-Format
+        let extra = output.pathExtension.lowercased() == "wav" ? ["-rf64", "auto"] : []
+
         let p = Process()
         p.executableURL = URL(fileURLWithPath: ffmpeg)
-        p.arguments = ["-hide_banner", "-nostdin", "-y", "-i", input.path]
-            + preset.args
+        p.arguments = ["-hide_banner", "-nostdin", "-y"] + inputArgs
+            + preset.args + extra
             + ["-progress", "pipe:1", "-nostats", output.path]
 
         let outPipe = Pipe()

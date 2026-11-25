@@ -8,14 +8,20 @@ enum JobStatus: Equatable {
 @MainActor
 final class Job: ObservableObject, Identifiable {
     let id = UUID()
-    let input: URL
+    /// Eine Datei – oder mehrere, die zu einer zusammengefügt werden
+    let inputs: [URL]
+    var input: URL { inputs[0] }
+    var isMerge: Bool { inputs.count > 1 }
+    var displayName: String {
+        isMerge ? "\(inputs.count) Dateien zusammenfügen: \(input.lastPathComponent) …" : input.lastPathComponent
+    }
     @Published var presetID: String
     @Published var status: JobStatus = .waiting
     @Published var progress: Double = 0
     @Published var output: URL?
 
-    init(input: URL, presetID: String) {
-        self.input = input
+    init(inputs: [URL], presetID: String) {
+        self.inputs = inputs
         self.presetID = presetID
     }
 
@@ -72,7 +78,13 @@ final class QueueModel: ObservableObject {
     }
 
     private func append(_ url: URL) {
-        jobs.append(Job(input: url, presetID: defaultPresetID))
+        jobs.append(Job(inputs: [url], presetID: defaultPresetID))
+    }
+
+    /// Mehrere Dateien in der angegebenen Reihenfolge zu einer zusammenfügen.
+    func addMerge(urls: [URL], presetID: String) {
+        guard urls.count > 1 else { return }
+        jobs.append(Job(inputs: urls, presetID: presetID))
     }
 
     func applyDefaultPresetToWaiting() {
@@ -118,18 +130,21 @@ final class QueueModel: ObservableObject {
 
     private func run(_ job: Job) async {
         let preset = job.preset
-        let output = outputURL(for: job.input, preset: preset)
+        let output = outputURL(for: job.input, preset: preset, merged: job.isMerge)
         job.status = .running
         job.progress = 0
         job.output = output
 
-        let input = job.input
-        let duration = await Task.detached { Tools.duration(of: input) }.value
+        let inputs = job.inputs
+        let duration = await Task.detached { () -> Double? in
+            let parts = inputs.compactMap { Tools.duration(of: $0) }
+            return parts.count == inputs.count ? parts.reduce(0, +) : nil
+        }.value
 
         let runner = FFmpegRunner()
         self.runner = runner
         do {
-            try await runner.run(input: input, output: output, preset: preset, duration: duration) { value in
+            try await runner.run(inputs: inputs, output: output, preset: preset, duration: duration) { value in
                 Task { @MainActor in job.progress = value }
             }
             job.progress = 1
@@ -148,13 +163,14 @@ final class QueueModel: ObservableObject {
     }
 
     /// Erzeugt einen freien Dateinamen, damit nichts überschrieben wird.
-    private func outputURL(for input: URL, preset: Preset) -> URL {
+    private func outputURL(for input: URL, preset: Preset, merged: Bool) -> URL {
         let folder = outputFolder ?? input.deletingLastPathComponent()
-        let base = input.deletingPathExtension().lastPathComponent + preset.suffix
-        var candidate = folder.appendingPathComponent(base).appendingPathExtension(preset.fileExtension)
+        let base = input.deletingPathExtension().lastPathComponent + (merged ? "_zusammengefuegt" : "") + preset.suffix
+        let ext = preset.fileExtension.isEmpty ? input.pathExtension : preset.fileExtension
+        var candidate = folder.appendingPathComponent(base).appendingPathExtension(ext)
         var n = 2
         while FileManager.default.fileExists(atPath: candidate.path) || candidate.standardizedFileURL == input.standardizedFileURL {
-            candidate = folder.appendingPathComponent("\(base) \(n)").appendingPathExtension(preset.fileExtension)
+            candidate = folder.appendingPathComponent("\(base) \(n)").appendingPathExtension(ext)
             n += 1
         }
         return candidate

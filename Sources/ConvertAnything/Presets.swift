@@ -1,7 +1,7 @@
 import Foundation
 
 enum PresetCategory: String, CaseIterable, Identifiable {
-    case audio, proxy, video
+    case audio, proxy, video, original
 
     var id: String { rawValue }
 
@@ -10,6 +10,7 @@ enum PresetCategory: String, CaseIterable, Identifiable {
         case .audio: return "Audio"
         case .proxy: return "Proxys"
         case .video: return "Video"
+        case .original: return "Ohne Umwandeln"
         }
     }
 }
@@ -21,6 +22,7 @@ struct Preset: Identifiable, Hashable {
     let category: PresetCategory
     /// Wird an den Dateinamen angehängt, z. B. "Interview_proxy.mov".
     let suffix: String
+    /// Leer = Dateiendung der Originaldatei behalten
     let fileExtension: String
     let args: [String]
 
@@ -96,6 +98,8 @@ struct Preset: Identifiable, Hashable {
                args: prores(3) + pcmAudio),
         Preset(id: "prores-4444", name: "ProRes 4444", category: .video, suffix: "_prores4444", fileExtension: "mov",
                args: prores(4, pixFmt: "yuva444p10le") + pcmAudio),
+        Preset(id: "copy", name: "Original-Format beibehalten (verlustfrei)", category: .original, suffix: "", fileExtension: "",
+               args: ["-map", "0", "-c", "copy"]),
         Preset(id: "dnxhr-hq", name: "DNxHR HQ", category: .video, suffix: "_dnxhr", fileExtension: "mov",
                args: ["-c:v", "dnxhd", "-profile:v", "dnxhr_hq", "-pix_fmt", "yuv422p"] + pcmAudio),
     ]

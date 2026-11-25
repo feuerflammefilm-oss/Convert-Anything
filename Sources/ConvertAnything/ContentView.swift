@@ -22,6 +22,7 @@ struct PresetPicker: View {
 struct ContentView: View {
     @EnvironmentObject var model: QueueModel
     @State private var isDropTargeted = false
+    @State private var mergeFiles: [URL]?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,6 +32,10 @@ struct ContentView: View {
             queue
         }
         .onDrop(of: [.fileURL], isTargeted: $isDropTargeted, perform: handleDrop)
+        .sheet(isPresented: Binding(get: { mergeFiles != nil }, set: { if !$0 { mergeFiles = nil } })) {
+            MergeSheet(files: mergeFiles ?? [])
+                .environmentObject(model)
+        }
         .overlay {
             if isDropTargeted {
                 RoundedRectangle(cornerRadius: 12)
@@ -44,6 +49,10 @@ struct ContentView: View {
                 Button { Self.openFiles(model: model) } label: {
                     Label("Hinzufügen", systemImage: "plus")
                 }
+                Button { chooseMergeFiles() } label: {
+                    Label("Zusammenfügen", systemImage: "rectangle.stack.badge.plus")
+                }
+                .help("Mehrere Dateien zu einer zusammenfügen")
                 Button { model.clearFinished() } label: {
                     Label("Fertige entfernen", systemImage: "trash")
                 }
@@ -142,6 +151,18 @@ struct ContentView: View {
         if panel.runModal() == .OK { model.add(urls: panel.urls) }
     }
 
+    private func chooseMergeFiles() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseFiles = true
+        panel.message = "Wähle die Dateien, die zusammengefügt werden sollen (z. B. alle Stücke einer Aufnahme)."
+        panel.prompt = "Auswählen"
+        guard panel.runModal() == .OK else { return }
+        mergeFiles = panel.urls.sorted {
+            $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending
+        }
+    }
+
     private func chooseOutputFolder() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
@@ -174,7 +195,8 @@ struct JobRow: View {
                 .frame(width: 28)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(job.input.lastPathComponent)
+                Text(job.displayName)
+                    .help(job.inputs.map(\.lastPathComponent).joined(separator: "\n"))
                     .font(.body.weight(.medium))
                     .lineLimit(1)
                     .truncationMode(.middle)
