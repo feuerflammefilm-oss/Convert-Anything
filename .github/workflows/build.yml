@@ -22,14 +22,14 @@ jobs:
       - name: Als Download speichern
         uses: actions/upload-artifact@v4
         with:
-          name: Convert-Anything
-          path: build/Convert-Anything.zip
+          name: FuFF-Convert
+          path: build/FuFF-Convert.zip
 
       - name: Release "Neueste Version" aktualisieren
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest build/Convert-Anything.zip \
-            --title "Convert Anything – neueste Version (Build ${{ github.run_number }})" \
+          gh release create latest build/FuFF-Convert.zip \
+            --title "FuFF Convert – neueste Version (Build ${{ github.run_number }})" \
             --notes "Automatisch gebaut aus dem aktuellen Stand. ZIP laden, entpacken, App in den Programme-Ordner ziehen."

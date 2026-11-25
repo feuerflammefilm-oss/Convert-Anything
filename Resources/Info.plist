@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>Convert Anything</string>
+    <string>FuFF Convert</string>
     <key>CFBundleDisplayName</key>
-    <string>Convert Anything</string>
+    <string>FuFF Convert</string>
     <key>CFBundleIdentifier</key>
     <string>app.convertanything.ConvertAnything</string>
     <key>CFBundleExecutable</key>

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Baut "Convert Anything.app" (Universal: Apple Silicon + Intel) inkl. FFmpeg.
+# Baut "FuFF Convert.app" (Universal: Apple Silicon + Intel) inkl. FFmpeg.
 # Läuft auf GitHub Actions (macOS). Lokal geht es genauso, wenn Xcode installiert ist.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-APP_NAME="Convert Anything"
+APP_NAME="FuFF Convert"
 BUILD_DIR="build"
 APP="$BUILD_DIR/$APP_NAME.app"
 VERSION="${VERSION:-0.1.0}"
@@ -51,5 +51,5 @@ echo "==> Kurztest"
 "$APP/Contents/Resources/ffmpeg" -hide_banner -encoders | grep -E "libmp3lame|prores_ks|h264_videotoolbox|hevc_videotoolbox|dnxhd" || true
 
 echo "==> ZIP erstellen"
-ditto -c -k --keepParent "$APP" "$BUILD_DIR/Convert-Anything.zip"
-echo "Fertig: $BUILD_DIR/Convert-Anything.zip"
+ditto -c -k --keepParent "$APP" "$BUILD_DIR/FuFF-Convert.zip"
+echo "Fertig: $BUILD_DIR/FuFF-Convert.zip"

@@ -16,7 +16,7 @@ struct ConvertAnythingApp: App {
     @StateObject private var model = QueueModel()
 
     var body: some Scene {
-        WindowGroup("Convert Anything") {
+        WindowGroup("FuFF Convert") {
             ContentView()
                 .environmentObject(model)
                 .frame(minWidth: 760, minHeight: 460)

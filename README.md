@@ -1,4 +1,4 @@
-# Convert Anything
+# FuFF Convert
 
 Kleine Mac-App zum Konvertieren von Audio und Video – ähnlich wie Adobe Media Encoder oder Compressor.
 Unter der Haube arbeitet [FFmpeg](https://ffmpeg.org), das direkt in die App eingebaut ist.
@@ -22,13 +22,13 @@ Unter der Haube arbeitet [FFmpeg](https://ffmpeg.org), das direkt in die App ein
 
 ## Installieren (ohne Xcode)
 
-1. Auf GitHub rechts auf **Releases → „latest“** gehen und `Convert-Anything.zip` herunterladen.
-2. ZIP öffnen und **Convert Anything.app** in den Ordner **Programme** ziehen.
+1. Auf GitHub rechts auf **Releases → „latest“** gehen und `FuFF-Convert.zip` herunterladen.
+2. ZIP öffnen und **FuFF Convert.app** in den Ordner **Programme** ziehen.
 3. Beim ersten Start: **Rechtsklick → Öffnen**. Falls macOS es trotzdem blockiert:
    **Systemeinstellungen → Datenschutz & Sicherheit → „Dennoch öffnen“**.
    Alternativ im Terminal:
    ```bash
-   xattr -cr "/Applications/Convert Anything.app"
+   xattr -cr "/Applications/FuFF Convert.app"
    ```
 
 Die App ist nicht bei Apple registriert (kostet 99 $/Jahr), deshalb dieser einmalige Schritt.
