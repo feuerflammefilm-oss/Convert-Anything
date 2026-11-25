@@ -14,7 +14,7 @@ Unter der Haube arbeitet [FFmpeg](https://ffmpeg.org), das direkt in die App ein
 
 | Audio | Proxys | Video |
 |---|---|---|
-| MP3 320 / 192 / 128 | ProRes Proxy 1080p / 720p | H.264 hohe Qualität (Hardware) |
+| MP3 320 / 192 / 128 / 96 / 64 | ProRes Proxy 1080p / 720p | H.264 hohe Qualität (Hardware) |
 | AAC (M4A) 256 | ProRes LT 1080p | H.264 Web 1080p |
 | WAV 16 / 24 Bit | H.264 1080p / 720p | HEVC / H.265 (Hardware) |
 | AIFF 16 / 24 Bit | | ProRes 422 / HQ / 4444 |
