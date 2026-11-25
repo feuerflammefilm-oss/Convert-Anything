@@ -49,25 +49,29 @@ struct ContentView: View {
                 Button { Self.openFiles(model: model) } label: {
                     Label("Hinzufügen", systemImage: "plus")
                 }
+                .help("Dateien oder Ordner zur Warteschlange hinzufügen (⌘O)")
                 Button { chooseMergeFiles() } label: {
                     Label("Zusammenfügen", systemImage: "rectangle.stack.badge.plus")
                 }
-                .help("Mehrere Dateien zu einer zusammenfügen")
+                .help("Mehrere Dateien zu einer zusammenfügen – z. B. die einzelnen Stücke einer langen Mikrofon-Aufnahme")
                 Button { model.clearFinished() } label: {
                     Label("Fertige entfernen", systemImage: "trash")
                 }
                 .disabled(model.jobs.allSatisfy { $0.status == .waiting || $0.status == .running })
+                .help("Fertige und fehlgeschlagene Einträge aus der Liste entfernen (die Dateien bleiben erhalten)")
 
                 if model.isRunning {
                     Button { model.stop() } label: {
                         Label("Stopp", systemImage: "stop.fill")
                     }
+                    .help("Umwandlung anhalten – die gerade laufende Datei wird abgebrochen")
                 } else {
                     Button { model.start() } label: {
                         Label("Start", systemImage: "play.fill")
                     }
                     .disabled(!model.jobs.contains { $0.status == .waiting } || !model.ffmpegAvailable)
                     .keyboardShortcut(.return, modifiers: .command)
+                    .help("Alle wartenden Dateien umwandeln (⌘↩)")
                 }
             }
         }
@@ -81,6 +85,7 @@ struct ContentView: View {
                 .frame(maxWidth: 360)
             Button("Auf alle anwenden") { model.applyDefaultPresetToWaiting() }
                 .disabled(!model.jobs.contains { $0.status == .waiting })
+                .help("Dieses Preset für alle wartenden Dateien übernehmen")
 
             Spacer()
 
@@ -97,6 +102,7 @@ struct ContentView: View {
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
+            .help("Zielordner wählen, in dem die neuen Dateien gespeichert werden")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
