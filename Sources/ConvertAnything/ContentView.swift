@@ -52,6 +52,7 @@ struct ContentView: View {
                 .help("Dateien oder Ordner zur Warteschlange hinzufügen (⌘O)")
                 Button { chooseMergeFiles() } label: {
                     Label("Zusammenfügen", systemImage: "rectangle.stack.badge.plus")
+                        .labelStyle(.titleAndIcon)
                 }
                 .help("Mehrere Dateien zu einer zusammenfügen – z. B. die einzelnen Stücke einer langen Mikrofon-Aufnahme")
                 Button { model.clearFinished() } label: {

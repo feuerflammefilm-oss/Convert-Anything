@@ -7,6 +7,8 @@ struct MergeSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State var files: [URL]
     @State private var presetID = "copy"
+    /// nil = wird noch geprüft
+    @State private var identical: Bool?
     @State private var selection: URL?
 
     var body: some View {
@@ -47,6 +49,16 @@ struct MergeSheet: View {
             }
 
             PresetPicker(title: "Ausgabe:", selection: $presetID)
+            if identical == nil {
+                HStack { ProgressView().controlSize(.small); Text("Dateien werden geprüft …").foregroundStyle(.secondary) }
+            } else if identical == false {
+                Label(presetID == "copy"
+                      ? "Achtung: Die Dateien haben unterschiedliche Formate (z. B. Bitrate oder Abtastrate). Verlustfreies Aneinanderhängen funktioniert dann nicht sauber – bitte ein Preset wie MP3 oder WAV wählen."
+                      : "Die Dateien haben unterschiedliche Formate und werden deshalb neu kodiert.",
+                      systemImage: presetID == "copy" ? "exclamationmark.triangle.fill" : "info.circle")
+                    .foregroundStyle(presetID == "copy" ? .orange : .secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             HStack {
                 Spacer()
@@ -62,6 +74,33 @@ struct MergeSheet: View {
         }
         .padding(22)
         .frame(width: 560)
+        .task(id: files) { await checkFormats() }
+    }
+
+    /// Prüft, ob alle Dateien dasselbe Format haben. Wenn nicht: passendes Preset zum Neu-Kodieren wählen.
+    private func checkFormats() async {
+        identical = nil
+        let list = files
+        let same = await Task.detached { () -> Bool in
+            let sigs = list.map { Tools.signature(of: $0) }
+            guard let first = sigs.first, first != nil else { return false }
+            return sigs.allSatisfy { $0 == first }
+        }.value
+        identical = same
+        if !same && presetID == "copy" {
+            presetID = Self.reencodePreset(for: list.first?.pathExtension.lowercased() ?? "")
+        }
+    }
+
+    static func reencodePreset(for ext: String) -> String {
+        switch ext {
+        case "wav": return "wav-24"
+        case "aif", "aiff": return "aiff-24"
+        case "m4a", "aac": return "aac-256"
+        case "flac": return "flac"
+        case "mov", "mp4", "m4v", "mxf": return "prores-422"
+        default: return "mp3-320"
+        }
     }
 
     private func canMove(_ d: Int) -> Bool {

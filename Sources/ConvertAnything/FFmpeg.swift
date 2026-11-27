@@ -24,6 +24,24 @@ enum Tools {
         return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
 
+    /// Kurzbeschreibung der Tonspur (Codec, Abtastrate, Kanäle) und ggf. des Bildes –
+    /// gleiche Werte bedeuten: Dateien lassen sich verlustfrei aneinanderhängen.
+    static func signature(of url: URL) -> String? {
+        guard let ffprobe = path("ffprobe") else { return nil }
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: ffprobe)
+        p.arguments = ["-v", "error", "-show_entries", "stream=codec_type,codec_name,sample_rate,channels,width,height,pix_fmt",
+                       "-of", "compact=nokey=1", url.path]
+        let out = Pipe()
+        p.standardOutput = out
+        p.standardError = FileHandle.nullDevice
+        do { try p.run() } catch { return nil }
+        let data = out.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        let text = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty ? nil : text
+    }
+
     /// Länge der Datei in Sekunden (für den Fortschrittsbalken).
     static func duration(of url: URL) -> Double? {
         guard let ffprobe = path("ffprobe") else { return nil }
@@ -61,7 +79,13 @@ final class FFmpegRunner {
         // Mehrere Dateien: über eine Liste nahtlos hintereinanderhängen (concat)
         var inputArgs: [String]
         var listFile: URL?
-        if inputs.count > 1 {
+        if inputs.count > 1 && preset.category == .audio {
+            // Audio neu kodieren: concat-Filter – funktioniert auch bei unterschiedlichen
+            // Bitraten, Abtastraten oder Kanalzahlen (z. B. drei verschiedene MP3s)
+            inputArgs = inputs.flatMap { ["-i", $0.path] }
+            let labels = inputs.indices.map { "[\($0):a:0]" }.joined()
+            inputArgs += ["-filter_complex", "\(labels)concat=n=\(inputs.count):v=0:a=1[out]", "-map", "[out]"]
+        } else if inputs.count > 1 {
             let list = FileManager.default.temporaryDirectory.appendingPathComponent("concat-\(UUID().uuidString).txt")
             let lines = inputs.map { "file '" + $0.path.replacingOccurrences(of: "'", with: "'\\''") + "'" }
             try lines.joined(separator: "\n").write(to: list, atomically: true, encoding: .utf8)
