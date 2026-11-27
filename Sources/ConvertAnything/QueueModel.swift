@@ -87,6 +87,16 @@ final class QueueModel: ObservableObject {
         jobs.append(Job(inputs: urls, presetID: presetID))
     }
 
+    /// Preset für die ausgewählten (wartenden) Dateien setzen.
+    func applyPreset(_ presetID: String, to ids: Set<UUID>) {
+        for job in jobs where ids.contains(job.id) && job.status == .waiting { job.presetID = presetID }
+    }
+
+    /// Ausgewählte Einträge entfernen (laufende bleiben).
+    func remove(ids: Set<UUID>) {
+        jobs.removeAll { ids.contains($0.id) && $0.status != .running }
+    }
+
     func applyDefaultPresetToWaiting() {
         for job in jobs where job.status == .waiting { job.presetID = defaultPresetID }
     }

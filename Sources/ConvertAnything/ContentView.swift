@@ -23,6 +23,12 @@ struct ContentView: View {
     @EnvironmentObject var model: QueueModel
     @State private var isDropTargeted = false
     @State private var mergeFiles: [URL]?
+    /// Markierte Einträge (⌘-Klick / ⇧-Klick für mehrere)
+    @State private var selection = Set<UUID>()
+
+    private var selectedWaiting: Int {
+        model.jobs.filter { selection.contains($0.id) && $0.status == .waiting }.count
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -84,9 +90,16 @@ struct ContentView: View {
         HStack(spacing: 16) {
             PresetPicker(title: "Preset:", selection: $model.defaultPresetID)
                 .frame(maxWidth: 360)
-            Button("Auf alle anwenden") { model.applyDefaultPresetToWaiting() }
-                .disabled(!model.jobs.contains { $0.status == .waiting })
-                .help("Dieses Preset für alle wartenden Dateien übernehmen")
+            if selectedWaiting > 0 {
+                Button(selectedWaiting == 1 ? "Auf Auswahl anwenden" : "Auf \(selectedWaiting) ausgewählte anwenden") {
+                    model.applyPreset(model.defaultPresetID, to: selection)
+                }
+                .help("Dieses Preset für die markierten Dateien übernehmen (mehrere markieren mit ⌘-Klick oder ⇧-Klick)")
+            } else {
+                Button("Auf alle anwenden") { model.applyDefaultPresetToWaiting() }
+                    .disabled(!model.jobs.contains { $0.status == .waiting })
+                    .help("Dieses Preset für alle wartenden Dateien übernehmen – oder vorher einzelne Dateien markieren (⌘-Klick / ⇧-Klick)")
+            }
 
             Spacer()
 
@@ -138,12 +151,33 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            List {
+            List(selection: $selection) {
                 ForEach(model.jobs) { job in
-                    JobRow(job: job)
+                    JobRow(job: job).tag(job.id)
                 }
             }
             .listStyle(.inset(alternatesRowBackgrounds: true))
+            .contextMenu(forSelectionType: UUID.self) { ids in
+                Menu(ids.count > 1 ? "Preset für \(ids.count) Dateien" : "Preset") {
+                    ForEach(PresetCategory.allCases) { cat in
+                        Section(cat.title) {
+                            ForEach(Preset.inCategory(cat)) { p in
+                                Button(p.name) { model.applyPreset(p.id, to: ids) }
+                            }
+                        }
+                    }
+                }
+                Divider()
+                Button(ids.count > 1 ? "\(ids.count) Einträge entfernen" : "Entfernen") {
+                    model.remove(ids: ids)
+                    selection.subtract(ids)
+                }
+            }
+            // Backspace entfernt die markierten Einträge
+            .onDeleteCommand {
+                model.remove(ids: selection)
+                selection.removeAll()
+            }
         }
     }
 
